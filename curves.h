@@ -10,6 +10,7 @@ typedef struct Point
 
 typedef struct Curve
 {
+	char *id;
 	Point *points;
 	int numOfPoints;
 } Curve;
