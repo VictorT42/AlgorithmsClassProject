@@ -2,7 +2,7 @@ CC = gcc -g3 -Wall
 OUT = lsh
 
 all:
-	$(CC) main.c dtw.c dfd.c euclid.c input.c -lm -o $(OUT)
+	$(CC) main.c dtw.c dfd.c euclid.c input.c curves.c -lm -o $(OUT)
 
 main.o: main.c 
 	$(CC) -c main.c

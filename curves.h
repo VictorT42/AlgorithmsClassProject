@@ -1,5 +1,7 @@
 //File curves.h
 
+#define DELTA 0.5
+
 typedef struct Point
 {
 	double x;
@@ -14,4 +16,10 @@ typedef struct Curve
 	Point *points;
 	int numOfPoints;
 } Curve;
+
+typedef struct Vector
+{
+	double *coordinates;
+	int length;
+} Vector;
 
