@@ -4,11 +4,14 @@
 #include <math.h>
 #include "curves.h"
 
-void snapToGrid(Curve *curve, Vector *u, int k, int d, Point *grids)
+Vector *snapToGrid(Curve *curve, int k, int d, Point *grids)
 {
 	int i, j, g;
 	int same;
 	int vectorOffset=0;
+	Vector *u;
+	
+	u=malloc(sizeof(Vector));
 	
 	u->length = curve->numOfPoints * d * k;
 	u->coordinates = malloc(u->length * sizeof(double));
@@ -33,14 +36,14 @@ void snapToGrid(Curve *curve, Vector *u, int k, int d, Point *grids)
 						same = 0;
 				}
 				if(same)
-					vectorOffset =- d;
+					vectorOffset -= d;
 			}
 		}
 	}
 	
 	u->length = vectorOffset;
 	
-	return;
+	return u;
 	
 }
 

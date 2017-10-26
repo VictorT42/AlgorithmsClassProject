@@ -23,25 +23,27 @@ int countLines(FILE *input)
 	return lines;
 }
 
-Curve *readCurves(FILE *input, int *d, int *curvesNum)
+Curve *readCurves(FILE *input, int *d, int *curvesNum, double *r)
 {
 	char buffer[1024];
-	int dimension;
+	double parameter;
 	int i, j;
 	Curve *curves;
 	
 	*curvesNum = countLines(input);
 	
-	fscanf(input, "%s %d", buffer, &dimension);
+	fscanf(input, "%s %lf", buffer, &parameter);
 	if(!strcmp(buffer, "@dimension"))
 	{
-		*d = dimension;
+		*d = (int)parameter;
 		(*curvesNum)--;
+	}
+	else if(!strcmp(buffer, "R:"))
+	{
+		*r = parameter;
 	}
 	else
 	{
-		dimension = 2;
-		*d = 2;
 		fseek(input, 0, SEEK_SET);
 	}
 	
@@ -55,10 +57,10 @@ Curve *readCurves(FILE *input, int *d, int *curvesNum)
 		for(j=0; j < curves[i].numOfPoints; j++)
 		{
 			fscanf(input, "(%lf, %lf", &(curves[i].points[j].x), &(curves[i].points[j].y));
-			if(dimension > 2)
+			if(*d > 2)
 			{
 				fscanf(input, ", %lf", &(curves[i].points[j].z));
-				if(dimension > 3)
+				if(*d > 3)
 					fscanf(input, ", %lf", &(curves[i].points[j].w));
 			}
 			fscanf(input, "), ");

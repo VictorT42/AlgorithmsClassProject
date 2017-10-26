@@ -1,6 +1,8 @@
 //File curves.h
 
-#define DELTA 0.5
+#include <stdio.h>
+
+#define DELTA 0.005
 
 typedef struct Point
 {
@@ -22,4 +24,7 @@ typedef struct Vector
 	double *coordinates;
 	int length;
 } Vector;
+
+Vector *snapToGrid(Curve *curve, int k, int d, Point *grids);
+Curve *readCurves(FILE*, int*, int*, double*);
 
