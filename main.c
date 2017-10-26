@@ -10,6 +10,7 @@ double dtw(Curve*, Curve*);
 double dfd(Curve*, Curve*);
 Curve *readCurves(FILE*, int*, int*);
 void snapToGrid(Curve *curve, Vector *u, int k, int d, Point *grids);
+int hash(Vector*, int);
 
 int main(int argc, char *argv[])
 {
@@ -37,7 +38,7 @@ int main(int argc, char *argv[])
 			i--;
 		}
 	}
-	
+	hash(NULL,0);
 	if(!dataset)
 	{
 		printf("Invalid input file given\n");
