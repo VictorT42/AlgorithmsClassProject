@@ -8,9 +8,10 @@
 #include "curves.h"
 #include "hash.h"
 
+#define VERBOSE 1
+
 double dtw(Curve*, Curve*);
 double dfd(Curve*, Curve*);
-int countEntries(Bucket *b);
 
 int main(int argc, char *argv[])
 {
@@ -133,7 +134,14 @@ int main(int argc, char *argv[])
 		maxCurveLength = (curves[i].numOfPoints > maxCurveLength) ? curves[i].numOfPoints : maxCurveLength;
 	maxGridCurveLength = maxCurveLength * dimension * k;
 	
-	
+	if(stats && VERBOSE)
+	{
+		printf("Progress: 0%%[");
+		for(i=0;i<100;i++)putchar(' ');
+		printf("]100%%");
+		for(i=0;i<105;i++)putchar('\b');
+		fflush(stdout);
+	}
 	for(statsCounter=0; statsCounter < ((stats) ? 100 : 1); statsCounter++)
 	{
 		//Put dataset curves into hash tables
@@ -228,6 +236,9 @@ int main(int argc, char *argv[])
 					insertToTable(hashInfo[m].hashTable, g_u, u, i, hashInfo[m].r);
 				}
 			}
+			
+			free(g_u->coordinates);
+			free(g_u);
 		}
 		
 		
@@ -332,23 +343,32 @@ int main(int argc, char *argv[])
 				queryStats[i].tLSHsum += tLSH;
 			}
 			
-			fprintf(outputFile, "Query: %s\n", queries[i].id);
-			fprintf(outputFile, "DistanceFunction: %s\n", (distanceFunction == dtw) ? "DTW" : "DFT");
-			fprintf(outputFile, "HashFunction: %s\n", (hashType == 'c') ? "Classic" : "Probabilistic");
-			fprintf(outputFile, "FoundGridCurve: %s\n", foundGridCurve ? "True" : "False");
-			fprintf(outputFile, "LSH Nearest neighbor: %s\n", curves[nearestOfL].id);
-			fprintf(outputFile, "True Nearest neighbor: %s\n", curves[trueNearest].id);
-			fprintf(outputFile, "distanceLSH: %lf\n", nearestOfLDistance);
-			fprintf(outputFile, "distanceTrue: %lf\n", trueNearestDistance);
-			
-			if(radius > 0)
+			//Print query results if not calculating statistics
+			if(!stats)
 			{
-				sort(lResults, numOfLResults, curves);
-				fprintf(outputFile, "R-near neighbors:\n");
-				for(j=0; j<numOfLResults; j++)
+				fprintf(outputFile, "Query: %s\n", queries[i].id);
+				fprintf(outputFile, "DistanceFunction: %s\n", (distanceFunction == dtw) ? "DTW" : "DFT");
+				fprintf(outputFile, "HashFunction: %s\n", (hashType == 'c') ? "Classic" : "Probabilistic");
+				fprintf(outputFile, "FoundGridCurve: %s\n", foundGridCurve ? "True" : "False");
+				fprintf(outputFile, "LSH Nearest neighbor: %s\n", curves[nearestOfL].id);
+				fprintf(outputFile, "True Nearest neighbor: %s\n", curves[trueNearest].id);
+				fprintf(outputFile, "distanceLSH: %lf\n", nearestOfLDistance);
+				fprintf(outputFile, "distanceTrue: %lf\n", trueNearestDistance);
+			
+				if(radius > 0)
 				{
-					fprintf(outputFile, "%s\n", curves[lResults[j].curve].id);
+					sort(lResults, numOfLResults, curves);
+					fprintf(outputFile, "R-near neighbors:\n");
+					for(j=0; j<numOfLResults; j++)
+					{
+						fprintf(outputFile, "%s\n", curves[lResults[j].curve].id);
+					}
 				}
+			}
+			else if(VERBOSE)
+			{
+				putchar('|');
+				fflush(stdout);
 			}
 		}
 		
@@ -360,48 +380,57 @@ int main(int argc, char *argv[])
 			free(hashInfo[i].r);
 			if(hashInfo[i].gParameters)
 			{
-				for(j=0; j<k; j++)
+				for(j=0; j<K_VEC; j++)
 				{
 					free(hashInfo[i].gParameters[j].v->coordinates);
 					free(hashInfo[i].gParameters[j].v);
 				}
 				free(hashInfo[i].gParameters);
 			}
+			free(results[i]);
 		}
 		free(hashInfo);
 		free(results);
+		if(hashType != 'c')
+			free(lResults);
 		free(numOfResults);
 		
 	}
 	
+	//Print stats
+	if(stats)
+	{
+		if(VERBOSE)
+			printf("\n");
+		for(i=0; i<queriesNum; i++)
+		{
+			fprintf(outputFile, "Query: %s\n", queries[i].id);
+			fprintf(outputFile, "DistanceFunction: %s\n", (distanceFunction == dtw) ? "DTW" : "DFT");
+			fprintf(outputFile, "HashFunction: %s\n", (hashType == 'c') ? "Classic" : "Probabilistic");
+			fprintf(outputFile, "|minDistanceLSH – distanceTrue|: %lf\n", queryStats[i].minDistance - queryStats[i].trueNearestDistance);
+			fprintf(outputFile, "|maxDistanceLSH – distanceTrue|: %lf\n", queryStats[i].maxDistance - queryStats[i].trueNearestDistance);
+			fprintf(outputFile, "|avgDistanceLSH – distanceTrue|: %lf\n", (queryStats[i].sumDistance / 100) - queryStats[i].trueNearestDistance);
+			fprintf(outputFile, "tLSHmin: %lf\n", queryStats[i].tLSHmin);
+			fprintf(outputFile, "tLSHmax: %lf\n", queryStats[i].tLSHmax);
+			fprintf(outputFile, "tLSHavg: %lf\n", queryStats[i].tLSHsum / 100);
+			fprintf(outputFile, "tTrue: %lf\n", queryStats[i].tTrue);
+		}
+	}
 	
-	
-	// int countPart,countFull=0;
-	// puts("Print hashtable?");
-	// if(getchar() == 'y'){
-		// for(j=0; j<l; j++)
-		// {
-			// countFull=0;
-			// printf("\nHashTable %d:\n", j);
-			// for(i=0; i<hashInfo[j].hashTable->size; i++)
-			// {
-				// countPart=countEntries(hashInfo[j].hashTable->table[i]);
-				// printf("%d ", countPart);
-				// countFull += countPart;
-			// }
-			// printf("\nAll entries are %d\n", countFull);
-			// puts("");
-		// }
-	// }
-	
-	
-	//Cleanup
+	//Full cleanup
+	free(queryStats);
 	for(i=0; i<curvesNum; i++)
 	{
 		free(curves[i].id);
 		free(curves[i].points);
 	}
 	free(curves);
+	for(i=0; i<queriesNum; i++)
+	{
+		free(queries[i].id);
+		free(queries[i].points);
+	}
+	free(queries);
 	
 	return 0;
 	

@@ -116,15 +116,15 @@ QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo
 		currentBucket = bucket;
 		while(currentBucket != NULL)
 		{
-			for(i=0; i<bucket->entries; i++)
+			for(i=0; i<currentBucket->entries; i++)
 			{
 				same = 0;
-				if(u->length != bucket->key[i]->length)
+				if(u->length != currentBucket->key[i]->length)
 					continue;
 				same = 1;
 				for(j=0; j<u->length; j++)
 				{
-					if(u->coordinates[j] != bucket->key[i]->coordinates[j])
+					if(u->coordinates[j] != currentBucket->key[i]->coordinates[j])
 					{
 						same = 0;
 						break;
@@ -135,10 +135,12 @@ QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo
 					result->curve = currentBucket->data[i];
 					result->foundGridCurve = 1;
 					result->distance = (*distanceFunction)(queryCurve, &(curves[result->curve]));
+					free(u->coordinates);
+					free(u);
 					return result;
 				}
 			}
-			currentBucket = bucket->overflow;
+			currentBucket = currentBucket->overflow;
 		}
 		
 		//Find nearest in bucket
@@ -148,7 +150,7 @@ QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo
 		result->distance = (*distanceFunction)(queryCurve, &(curves[result->curve]));
 		while(currentBucket != NULL)
 		{
-			for(i=0; i<bucket->entries; i++)
+			for(i=0; i<currentBucket->entries; i++)
 			{
 				minDistance = (*distanceFunction)(queryCurve, &(curves[currentBucket->data[i]]));
 				if(minDistance < result->distance)
@@ -157,9 +159,8 @@ QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo
 					result->distance = minDistance;
 				}
 			}
-			currentBucket = bucket->overflow;
+			currentBucket = currentBucket->overflow;
 		}
-		return result;
 	}
 	
 	else
@@ -169,12 +170,12 @@ QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo
 		*numOfResults = 0;
 		
 		currentBucket = bucket;
-		*nearest = currentBucket->data[0];
-		minDistance = (*distanceFunction)(queryCurve, &(curves[*nearest]));
+		*nearest = 0;
+		minDistance = INFINITY;
 		
 		while(currentBucket != NULL)
 		{
-			for(i=0; i<bucket->entries; i++)
+			for(i=0; i<currentBucket->entries; i++)
 			{
 				distance = (*distanceFunction)(queryCurve, &(curves[currentBucket->data[i]]));
 				if(distance <= radius)
@@ -184,8 +185,8 @@ QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo
 					result[*numOfResults].foundGridCurve = 0;
 					if(distance < minDistance)
 					{
-						*nearest = currentBucket->data[i];
-						minDistance = (*distanceFunction)(queryCurve, &(curves[*nearest]));
+						*nearest = *numOfResults;
+						minDistance = (*distanceFunction)(queryCurve, &(curves[result[*nearest].curve]));
 					}
 					(*numOfResults)++;
 					if(*numOfResults == arraySize)
@@ -197,8 +198,12 @@ QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo
 			}
 			currentBucket = currentBucket->overflow;
 		}
-		return result;
 	}
+	
+	free(u->coordinates);
+	free(u);
+	return result;
+	
 }
 
 void destroyHashTable(HashTable *hashTable)
@@ -207,7 +212,7 @@ void destroyHashTable(HashTable *hashTable)
 	
 	for(i=0; i<hashTable->size; i++)
 		destroyBucket(hashTable->table[i]);
-	
+	free(hashTable->table);
 	free(hashTable);
 }
 

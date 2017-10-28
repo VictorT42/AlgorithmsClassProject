@@ -13,7 +13,7 @@ Vector *snapToGrid(Curve *curve, int k, int d, Point *grids)
 	int vectorOffset=0;
 	Vector *u;
 	
-	u=malloc(sizeof(Vector));
+	u = malloc(sizeof(Vector));
 	
 	u->length = curve->numOfPoints * d * k;
 	u->coordinates = malloc(u->length * sizeof(double));

@@ -54,6 +54,7 @@ void destroyBucket(Bucket *bucket);
 QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo *hashInfo, double radius, int k, int d,
 double (*distanceFunction)(Curve*, Curve*), int *nearest);
 void sort(QueryResult *results, int numOfResults, Curve *curves);
+int countEntries(Bucket *b);
 
 #endif
 
