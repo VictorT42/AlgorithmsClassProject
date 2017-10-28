@@ -7,11 +7,9 @@
 #include <math.h>
 #include "curves.h"
 #include "hash.h"
+#include "metrics.h"
 
-#define VERBOSE 1
-
-double dtw(Curve*, Curve*);
-double dfd(Curve*, Curve*);
+#define VERBOSE 0
 
 int main(int argc, char *argv[])
 {
@@ -270,13 +268,16 @@ int main(int argc, char *argv[])
 				end = clock();
 				if(*results == NULL)
 				{
-					printf("No curves found in bucket.\n");
-					continue;
+					nearestOfL = -1;
+					foundGridCurve = 0;
+					nearestOfLDistance = INFINITY;
 				}
-				
-				nearestOfL = results[nearest]->curve;
-				foundGridCurve = results[nearest]->foundGridCurve;
-				nearestOfLDistance = results[nearest]->distance;
+				else
+				{
+					nearestOfL = results[nearest]->curve;
+					foundGridCurve = results[nearest]->foundGridCurve;
+					nearestOfLDistance = results[nearest]->distance;
+				}
 				
 				lResults = *results;
 				numOfLResults = *numOfResults;
@@ -284,6 +285,7 @@ int main(int argc, char *argv[])
 			else
 			{
 				numOfLResults = 0;
+				nearestOfL = -1;
 				nearestOfLDistance = INFINITY;
 				start = clock();
 				for(j=0; j<l; j++)
@@ -330,27 +332,29 @@ int main(int argc, char *argv[])
 			
 			if(stats)
 			{
-				if(nearestOfLDistance < queryStats[i].minDistance)
-					queryStats[i].minDistance = nearestOfLDistance;
-				if(nearestOfLDistance > queryStats[i].maxDistance)
-					queryStats[i].maxDistance = nearestOfLDistance;
-				queryStats[i].sumDistance += nearestOfLDistance;
-				tLSH = end-start / (double) CLOCKS_PER_SEC;
-				if(tLSH < queryStats[i].tLSHmin)
-					queryStats[i].tLSHmin = tLSH;
-				if(tLSH > queryStats[i].tLSHmax)
-					queryStats[i].tLSHmax = tLSH;
-				queryStats[i].tLSHsum += tLSH;
+				if(nearestOfL != -1)
+				{
+					if(nearestOfLDistance < queryStats[i].minDistance)
+						queryStats[i].minDistance = nearestOfLDistance;
+					if(nearestOfLDistance > queryStats[i].maxDistance)
+						queryStats[i].maxDistance = nearestOfLDistance;
+					queryStats[i].sumDistance += nearestOfLDistance;
+					tLSH = end-start / (double) CLOCKS_PER_SEC;
+					if(tLSH < queryStats[i].tLSHmin)
+						queryStats[i].tLSHmin = tLSH;
+					if(tLSH > queryStats[i].tLSHmax)
+						queryStats[i].tLSHmax = tLSH;
+					queryStats[i].tLSHsum += tLSH;
+				}
 			}
-			
 			//Print query results if not calculating statistics
-			if(!stats)
+			else
 			{
 				fprintf(outputFile, "Query: %s\n", queries[i].id);
 				fprintf(outputFile, "DistanceFunction: %s\n", (distanceFunction == dtw) ? "DTW" : "DFT");
 				fprintf(outputFile, "HashFunction: %s\n", (hashType == 'c') ? "Classic" : "Probabilistic");
 				fprintf(outputFile, "FoundGridCurve: %s\n", foundGridCurve ? "True" : "False");
-				fprintf(outputFile, "LSH Nearest neighbor: %s\n", curves[nearestOfL].id);
+				fprintf(outputFile, "LSH Nearest neighbor: %s\n", (nearestOfL != -1) ? curves[nearestOfL].id : "None found");
 				fprintf(outputFile, "True Nearest neighbor: %s\n", curves[trueNearest].id);
 				fprintf(outputFile, "distanceLSH: %lf\n", nearestOfLDistance);
 				fprintf(outputFile, "distanceTrue: %lf\n", trueNearestDistance);
@@ -365,7 +369,8 @@ int main(int argc, char *argv[])
 					}
 				}
 			}
-			else if(VERBOSE)
+			
+			if(stats && VERBOSE)
 			{
 				putchar('|');
 				fflush(stdout);

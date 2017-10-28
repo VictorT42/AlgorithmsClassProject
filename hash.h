@@ -7,6 +7,7 @@
 #define BUCKET_SIZE 32
 #define K_VEC 3
 #define W 4
+#define M ((long)2<<31) - 5
 
 typedef struct Bucket
 {

@@ -6,8 +6,6 @@
 #include "curves.h"
 #include "hash.h"
 
-#define M ((long)2<<31) - 5
-
 int hash(Vector *u, int *r, int tableSize)
 {
 	long long i;

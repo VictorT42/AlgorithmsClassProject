@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 
-#define DELTA 0.00001
+#define DELTA 0.01
 #define DELTA_ACCURACY 100000
 
 typedef struct Point
