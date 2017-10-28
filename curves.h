@@ -1,8 +1,12 @@
 //File curves.h
 
+#ifndef CURVES
+#define CURVES
+
 #include <stdio.h>
 
-#define DELTA 0.005
+#define DELTA 0.00001
+#define DELTA_ACCURACY 100000
 
 typedef struct Point
 {
@@ -25,6 +29,22 @@ typedef struct Vector
 	int length;
 } Vector;
 
+typedef struct Stats
+{
+	double minDistance;
+	double maxDistance;
+	double sumDistance;
+	double tLSHmin;
+	double tLSHmax;
+	double tLSHsum;
+	double tTrue;
+	int trueNearest;
+	double trueNearestDistance;
+} Stats;
+
 Vector *snapToGrid(Curve *curve, int k, int d, Point *grids);
 Curve *readCurves(FILE*, int*, int*, double*);
+double findTrueNearest(Curve *queryCurve, Curve *curves, int curvesNum, int *nearest, double(*distanceFunction)(Curve*, Curve*));
+
+#endif
 

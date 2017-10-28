@@ -41,6 +41,7 @@ Curve *readCurves(FILE *input, int *d, int *curvesNum, double *r)
 	else if(!strcmp(buffer, "R:"))
 	{
 		*r = parameter;
+		(*curvesNum)--;
 	}
 	else
 	{
@@ -62,7 +63,11 @@ Curve *readCurves(FILE *input, int *d, int *curvesNum, double *r)
 				fscanf(input, ", %lf", &(curves[i].points[j].z));
 				if(*d > 3)
 					fscanf(input, ", %lf", &(curves[i].points[j].w));
+				else
+					curves[i].points[j].w = 0;
 			}
+			else
+				curves[i].points[j].z = 0;
 			fscanf(input, "), ");
 		}
 	}

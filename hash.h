@@ -1,5 +1,9 @@
 //File hash.h
 
+#ifndef HASH
+#define HASH
+
+#define INITIAL_RESULTS_SIZE 32
 #define BUCKET_SIZE 32
 #define K_VEC 3
 #define W 4
@@ -32,6 +36,13 @@ typedef struct HashInfo
 	GParameters *gParameters;
 } HashInfo;
 
+typedef struct QueryResult
+{
+	int curve;
+	double distance;
+	int foundGridCurve;
+} QueryResult;
+
 int hash(Vector*, int*, int);
 void g(Vector *g_u, Vector *u, GParameters *h);
 HashTable *createHashTable(int size);
@@ -40,4 +51,9 @@ void destroyHashTable(HashTable *hashTable);
 Bucket *createBucket();
 void insertToBucket(Bucket *bucket, Vector *key, int data);
 void destroyBucket(Bucket *bucket);
+QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo *hashInfo, double radius, int k, int d,
+double (*distanceFunction)(Curve*, Curve*), int *nearest);
+void sort(QueryResult *results, int numOfResults, Curve *curves);
+
+#endif
 

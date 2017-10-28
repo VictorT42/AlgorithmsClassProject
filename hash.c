@@ -31,11 +31,7 @@ int hash(Vector *u, int *r, int tableSize)
 void g(Vector *g_u, Vector *u, GParameters *h)
 {
 	int i, j;
-	// Vector *g_u;
 	double sum = 0;
-	
-	// g_u->length = K_VEC;
-	// g_u->coordinates = malloc(g_u->length * sizeof(double));
 	
 	for(i=0; i<K_VEC; i++)
 	{
@@ -44,8 +40,6 @@ void g(Vector *g_u, Vector *u, GParameters *h)
 		sum += h[i].t;
 		g_u->coordinates[i] = (int) (sum/W);
 	}
-	
-	// return g_u;
 	
 }
 
@@ -76,6 +70,135 @@ int insertToTable(HashTable *hashTable, Vector *hashKey, Vector *tableKey, int d
 	insertToBucket(bucket, tableKey, data);
 	
 	return position;
+}
+
+QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo *hashInfo, double radius, int k, int d,
+	double (*distanceFunction)(Curve*, Curve*), int *nearest)
+{
+	int i, j;
+	Vector *u;
+	Vector g_u;
+	int hashKey;
+	Bucket *bucket, *currentBucket;
+	QueryResult *result;
+	int same;
+	double distance;
+	double minDistance;
+	int arraySize;
+	
+	u = snapToGrid(queryCurve, k, d, hashInfo->grids);
+	
+	if(hashInfo->gParameters == NULL)  //Classic hashing
+	{
+		hashKey = hash(u, hashInfo->r, hashInfo->hashTable->size);
+		bucket = hashInfo->hashTable->table[hashKey];
+	}
+	else  //LSH
+	{
+		g_u.length = K_VEC;
+		g_u.coordinates = malloc(g_u.length * sizeof(double));
+		g(&g_u, u, hashInfo->gParameters);
+		hashKey = hash(&g_u, hashInfo->r, hashInfo->hashTable->size);
+		bucket = hashInfo->hashTable->table[hashKey];
+		free(g_u.coordinates);
+	}
+	
+	if(bucket->entries == 0)
+		return NULL;
+	
+	if(radius == 0)
+	{
+		result = malloc(sizeof(QueryResult));
+		*nearest = 0;
+		*numOfResults = 1;
+		
+		//Try to find identical grid curve
+		currentBucket = bucket;
+		while(currentBucket != NULL)
+		{
+			for(i=0; i<bucket->entries; i++)
+			{
+				same = 0;
+				if(u->length != bucket->key[i]->length)
+					continue;
+				same = 1;
+				for(j=0; j<u->length; j++)
+				{
+					if(u->coordinates[j] != bucket->key[i]->coordinates[j])
+					{
+						same = 0;
+						break;
+					}
+				}
+				if(same == 1)
+				{
+					result->curve = currentBucket->data[i];
+					result->foundGridCurve = 1;
+					result->distance = (*distanceFunction)(queryCurve, &(curves[result->curve]));
+					return result;
+				}
+			}
+			currentBucket = bucket->overflow;
+		}
+		
+		//Find nearest in bucket
+		currentBucket = bucket;
+		result->curve = currentBucket->data[0];
+		result->foundGridCurve = 0;
+		result->distance = (*distanceFunction)(queryCurve, &(curves[result->curve]));
+		while(currentBucket != NULL)
+		{
+			for(i=0; i<bucket->entries; i++)
+			{
+				minDistance = (*distanceFunction)(queryCurve, &(curves[currentBucket->data[i]]));
+				if(minDistance < result->distance)
+				{
+					result->curve = currentBucket->data[i];
+					result->distance = minDistance;
+				}
+			}
+			currentBucket = bucket->overflow;
+		}
+		return result;
+	}
+	
+	else
+	{
+		arraySize = INITIAL_RESULTS_SIZE;
+		result = malloc(arraySize * sizeof(QueryResult));
+		*numOfResults = 0;
+		
+		currentBucket = bucket;
+		*nearest = currentBucket->data[0];
+		minDistance = (*distanceFunction)(queryCurve, &(curves[*nearest]));
+		
+		while(currentBucket != NULL)
+		{
+			for(i=0; i<bucket->entries; i++)
+			{
+				distance = (*distanceFunction)(queryCurve, &(curves[currentBucket->data[i]]));
+				if(distance <= radius)
+				{
+					result[*numOfResults].curve = currentBucket->data[i];
+					result[*numOfResults].distance = distance;
+					result[*numOfResults].foundGridCurve = 0;
+					if(distance < minDistance)
+					{
+						*nearest = currentBucket->data[i];
+						minDistance = (*distanceFunction)(queryCurve, &(curves[*nearest]));
+					}
+					(*numOfResults)++;
+					if(*numOfResults == arraySize)
+					{
+						arraySize *= 2;
+						result = realloc(result, arraySize*sizeof(QueryResult));
+					}
+				}
+			}
+			currentBucket = currentBucket->overflow;
+		}
+		return result;
+	}
 }
 
 void destroyHashTable(HashTable *hashTable)
@@ -120,7 +243,10 @@ void destroyBucket(Bucket *bucket)
 	int i;
 	
 	for(i=0; i<bucket->entries; i++)
+	{
+		free(bucket->key[i]->coordinates);
 		free(bucket->key[i]);
+	}
 	
 	if(bucket->overflow)
 		destroyBucket(bucket->overflow);
