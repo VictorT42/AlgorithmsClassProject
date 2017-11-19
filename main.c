@@ -307,6 +307,8 @@ int main(int argc, char *argv[])
 				numOfLResults = 0;
 				for(j=0; j<l; j++)
 				{
+					if(results[j] == NULL)
+						continue;
 					for(m=0; m<numOfResults[j]; m++)
 					{
 						if(l>0)
