@@ -340,6 +340,7 @@ int main(int argc, char *argv[])
 		}
 		free(hashInfo);
 		free(rCurves);
+		rCurves = NULL;
 		
 	}
 	
