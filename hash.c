@@ -70,19 +70,18 @@ int insertToTable(HashTable *hashTable, Vector *hashKey, Vector *tableKey, int d
 	return position;
 }
 
-QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo *hashInfo, double radius, int k, int d,
-	double (*distanceFunction)(Curve*, Curve*), int *nearest)
+void query(Curve *queryCurve, QueryResult *nearest, int **rCurves, int *numOfRCurves, Curve *curves, HashInfo *hashInfo, double radius, int k, int d,
+	double (*distanceFunction)(Curve*, Curve*))
 {
 	int i, j;
 	Vector *u;
 	Vector g_u;
 	int hashKey;
 	Bucket *bucket, *currentBucket;
-	QueryResult *result;
 	int same;
 	double distance;
-	double minDistance;
 	int arraySize;
+	int added;
 	
 	u = snapToGrid(queryCurve, k, d, hashInfo->grids);
 	
@@ -101,24 +100,34 @@ QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo
 		free(g_u.coordinates);
 	}
 	
-	if(bucket->entries == 0)
-		return NULL;
 	
-	if(radius == 0)
+	nearest->curve = -1;
+	nearest->foundGridCurve = 0;
+	nearest->distance = INFINITY;
+	
+	if(bucket->entries == 0)  //If bucket is empty there are no results
 	{
-		result = malloc(sizeof(QueryResult));
-		*nearest = 0;
-		*numOfResults = 1;
-		
-		//Try to find identical grid curve
+		free(u->coordinates);
+		free(u);
+		return;
+	}
+	
+	if(radius != 0)
+	{
+		arraySize = countEntries(bucket);
+		*rCurves = realloc(*rCurves, (*numOfRCurves + arraySize) * sizeof(int));
+	}
+	else
+	{
+		//Try to find identical grid curve if R=0
 		currentBucket = bucket;
 		while(currentBucket != NULL)
 		{
 			for(i=0; i<currentBucket->entries; i++)
 			{
-				same = 0;
 				if(u->length != currentBucket->key[i]->length)
 					continue;
+				
 				same = 1;
 				for(j=0; j<u->length; j++)
 				{
@@ -130,77 +139,55 @@ QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo
 				}
 				if(same == 1)
 				{
-					result->curve = currentBucket->data[i];
-					result->foundGridCurve = 1;
-					result->distance = (*distanceFunction)(queryCurve, &(curves[result->curve]));
+					nearest->curve = currentBucket->data[i];
+					nearest->foundGridCurve = 1;
+					nearest->distance = (*distanceFunction)(queryCurve, &(curves[nearest->curve]));
 					free(u->coordinates);
 					free(u);
-					return result;
-				}
-			}
-			currentBucket = currentBucket->overflow;
-		}
-		
-		//Find nearest in bucket
-		currentBucket = bucket;
-		result->curve = currentBucket->data[0];
-		result->foundGridCurve = 0;
-		result->distance = (*distanceFunction)(queryCurve, &(curves[result->curve]));
-		while(currentBucket != NULL)
-		{
-			for(i=0; i<currentBucket->entries; i++)
-			{
-				minDistance = (*distanceFunction)(queryCurve, &(curves[currentBucket->data[i]]));
-				if(minDistance < result->distance)
-				{
-					result->curve = currentBucket->data[i];
-					result->distance = minDistance;
+					return;
 				}
 			}
 			currentBucket = currentBucket->overflow;
 		}
 	}
 	
-	else
+	
+	//Find nearest and all R-curves in bucket
+	currentBucket = bucket;
+	while(currentBucket != NULL)
 	{
-		arraySize = INITIAL_RESULTS_SIZE;
-		result = malloc(arraySize * sizeof(QueryResult));
-		*numOfResults = 0;
-		
-		currentBucket = bucket;
-		*nearest = 0;
-		minDistance = INFINITY;
-		
-		while(currentBucket != NULL)
+		for(i=0; i<currentBucket->entries; i++)
 		{
-			for(i=0; i<currentBucket->entries; i++)
+			distance = (*distanceFunction)(queryCurve, &(curves[currentBucket->data[i]]));
+			if(distance < nearest->distance)
 			{
-				distance = (*distanceFunction)(queryCurve, &(curves[currentBucket->data[i]]));
-				if(distance <= radius)
+				nearest->curve = currentBucket->data[i];
+				nearest->distance = distance;
+			}
+			if(radius != 0 && distance <= radius)
+			{
+				added = 0;
+				for(j=0; j<(*numOfRCurves); j++)  // Check if the curve is already in the results of a different hashtable
 				{
-					result[*numOfResults].curve = currentBucket->data[i];
-					result[*numOfResults].distance = distance;
-					result[*numOfResults].foundGridCurve = 0;
-					if(distance < minDistance)
+					if((*rCurves)[j] == currentBucket->data[i])
 					{
-						*nearest = *numOfResults;
-						minDistance = (*distanceFunction)(queryCurve, &(curves[result[*nearest].curve]));
-					}
-					(*numOfResults)++;
-					if(*numOfResults == arraySize)
-					{
-						arraySize *= 2;
-						result = realloc(result, arraySize*sizeof(QueryResult));
+						added = 1;
+						break;
 					}
 				}
+				if(!added)
+				{
+					(*rCurves)[*numOfRCurves] = currentBucket->data[i];
+					(*numOfRCurves)++;
+				}
 			}
-			currentBucket = currentBucket->overflow;
 		}
+		currentBucket = currentBucket->overflow;
 	}
 	
 	free(u->coordinates);
 	free(u);
-	return result;
+	return;
 	
 }
 

@@ -56,6 +56,8 @@ double findTrueNearest(Curve *queryCurve, Curve *curves, int curvesNum, int *nea
 	
 	*nearest = 0;
 	minDistance = (*distanceFunction)(queryCurve, &(curves[0]));
+	if(minDistance == 0)
+		return minDistance;
 	for(i=1; i<curvesNum; i++)
 	{
 		distance = (*distanceFunction)(queryCurve, &(curves[i]));
@@ -72,20 +74,20 @@ double findTrueNearest(Curve *queryCurve, Curve *curves, int curvesNum, int *nea
 	
 }
 
-void sort(QueryResult *results, int numOfResults, Curve *curves)
+void sort(int *rCurves, int numOfRCurves, Curve *curves)
 {
 	int i,j;
-	QueryResult temp;
+	int temp;
 	
-	for(i=1; i<numOfResults; i++)
+	for(i=1; i<numOfRCurves; i++)
 	{
 		for(j=0; j>0; j--)
 		{
-			if(strcmp(curves[results[j].curve].id, curves[results[j-1].curve].id) < 0)
+			if(strcmp(curves[rCurves[j]].id, curves[rCurves[j-1]].id) < 0)
 			{
-				temp = results[j];
-				results[j] = results[j-1];
-				results[j-1] = temp;
+				temp = rCurves[j];
+				rCurves[j] = rCurves[j-1];
+				rCurves[j-1] = temp;
 			}
 		}
 	}

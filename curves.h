@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 
-#define DELTA 0.01
+#define DELTA 0.0001
 #define DELTA_ACCURACY 100000
 
 typedef struct Point
@@ -45,6 +45,7 @@ typedef struct Stats
 Vector *snapToGrid(Curve *curve, int k, int d, Point *grids);
 Curve *readCurves(FILE*, int*, int*, double*);
 double findTrueNearest(Curve *queryCurve, Curve *curves, int curvesNum, int *nearest, double(*distanceFunction)(Curve*, Curve*));
+void sort(int*, int , Curve*);
 
 #endif
 

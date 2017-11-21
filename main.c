@@ -13,7 +13,7 @@
 
 int main(int argc, char *argv[])
 {
-	int i, j, m, n, statsCounter;
+	int i, j, m, statsCounter;
 	FILE *dataset=NULL, *queryFile=NULL, *outputFile=stdout;
 	Curve *curves, *queries;
 	int dimension=2;
@@ -27,20 +27,15 @@ int main(int argc, char *argv[])
 	int maxCurveLength;
 	int maxGridCurveLength;
 	double mU, mV, mS;
-	QueryResult **results;
-	QueryResult *lResults;
-	int *numOfResults;
-	int numOfLResults;
-	int nearest;
-	int nearestOfL;
-	double nearestOfLDistance;
+	int *rCurves = NULL;
+	int numOfRCurves = 0;
+	QueryResult tempNearest;
+	QueryResult nearest;
 	int trueNearest;
 	double trueNearestDistance;
 	double (*distanceFunction)(Curve*, Curve*) = (*dfd);
 	char fileNameBuffer[1024];
-	int foundGridCurve;
 	int stats=0;
-	int added;
 	Stats *queryStats;
 	clock_t start, end, tLSH;
 	
@@ -241,16 +236,10 @@ int main(int argc, char *argv[])
 		
 		
 		//Run the queries
-		if(hashType == 'c')
-		{
-			results = malloc(sizeof(QueryResult*));
-			numOfResults = malloc(sizeof(int));
-		}
-		else
-		{
-			results = malloc(l*sizeof(QueryResult*));
-			numOfResults = malloc(l*sizeof(int));
-		}
+		nearest.curve = -1;
+		nearest.distance = INFINITY;
+		nearest.foundGridCurve = 0;
+		
 		for(i=0; i<queriesNum; i++)
 		{
 			if(stats)
@@ -264,83 +253,37 @@ int main(int argc, char *argv[])
 			if(hashType == 'c')
 			{
 				start = clock();
-				*results = query(&(queries[i]), numOfResults, curves, hashInfo, radius, k, dimension, distanceFunction, &nearest);
+				query(&(queries[i]), &nearest, &rCurves, &numOfRCurves, curves, hashInfo, radius, k, dimension, distanceFunction);
 				end = clock();
-				if(*results == NULL)
-				{
-					nearestOfL = -1;
-					foundGridCurve = 0;
-					nearestOfLDistance = INFINITY;
-				}
-				else
-				{
-					nearestOfL = results[nearest]->curve;
-					foundGridCurve = results[nearest]->foundGridCurve;
-					nearestOfLDistance = results[nearest]->distance;
-				}
-				
-				lResults = *results;
-				numOfLResults = *numOfResults;
 			}
 			else
 			{
-				numOfLResults = 0;
-				nearestOfL = -1;
-				nearestOfLDistance = INFINITY;
 				start = clock();
 				for(j=0; j<l; j++)
 				{
-					results[j] = query(&(queries[i]), &(numOfResults[j]), curves, &(hashInfo[j]), radius, k, dimension, distanceFunction, &nearest);
-					if(results[j] == NULL)
+					query(&(queries[i]), &tempNearest, &rCurves, &numOfRCurves, curves, &(hashInfo[j]), radius, k, dimension, distanceFunction);
+					
+					if(tempNearest.curve == -1)
 						continue;
-					numOfLResults += numOfResults[j];
-					if((results[j][nearest].distance < nearestOfLDistance))
+					if(tempNearest.distance < nearest.distance)
 					{
-						nearestOfL = results[j][nearest].curve;
-						nearestOfLDistance = results[j][nearest].distance;
-						foundGridCurve = results[j][nearest].foundGridCurve;
+						nearest.curve = tempNearest.curve;
+						nearest.distance = tempNearest.distance;
+						nearest.foundGridCurve = tempNearest.foundGridCurve;
 					}
 				}
 				end = clock();
-				lResults = malloc(numOfLResults*sizeof(QueryResult));
-				
-				numOfLResults = 0;
-				for(j=0; j<l; j++)
-				{
-					if(results[j] == NULL)
-						continue;
-					for(m=0; m<numOfResults[j]; m++)
-					{
-						if(l>0)
-						{
-							// Check if the curve is already in the results of a different hashtable
-							added = 0;
-							for(n=0; n<numOfLResults; n++)
-							{
-								if(lResults[n].curve == results[j][m].curve)
-								{
-									added = 1;
-									break;
-								}
-							}
-							if(added)
-								continue;
-						}
-						lResults[numOfLResults] = results[j][m];
-						numOfLResults++;
-					}
-				}
 			}
 			
 			if(stats)
 			{
-				if(nearestOfL != -1)
+				if(nearest.curve != -1)
 				{
-					if(nearestOfLDistance < queryStats[i].minDistance)
-						queryStats[i].minDistance = nearestOfLDistance;
-					if(nearestOfLDistance > queryStats[i].maxDistance)
-						queryStats[i].maxDistance = nearestOfLDistance;
-					queryStats[i].sumDistance += nearestOfLDistance;
+					if(nearest.distance < queryStats[i].minDistance)
+						queryStats[i].minDistance = nearest.distance;
+					if(nearest.distance > queryStats[i].maxDistance)
+						queryStats[i].maxDistance = nearest.distance;
+					queryStats[i].sumDistance += nearest.distance;
 					tLSH = end-start / (double) CLOCKS_PER_SEC;
 					if(tLSH < queryStats[i].tLSHmin)
 						queryStats[i].tLSHmin = tLSH;
@@ -355,19 +298,19 @@ int main(int argc, char *argv[])
 				fprintf(outputFile, "Query: %s\n", queries[i].id);
 				fprintf(outputFile, "DistanceFunction: %s\n", (distanceFunction == dtw) ? "DTW" : "DFT");
 				fprintf(outputFile, "HashFunction: %s\n", (hashType == 'c') ? "Classic" : "Probabilistic");
-				fprintf(outputFile, "FoundGridCurve: %s\n", foundGridCurve ? "True" : "False");
-				fprintf(outputFile, "LSH Nearest neighbor: %s\n", (nearestOfL != -1) ? curves[nearestOfL].id : "None found");
+				fprintf(outputFile, "FoundGridCurve: %s\n", nearest.foundGridCurve ? "True" : "False");
+				fprintf(outputFile, "LSH Nearest neighbor: %s\n", (nearest.curve != -1) ? curves[nearest.curve].id : "None found");
 				fprintf(outputFile, "True Nearest neighbor: %s\n", curves[trueNearest].id);
-				fprintf(outputFile, "distanceLSH: %lf\n", nearestOfLDistance);
+				fprintf(outputFile, "distanceLSH: %lf\n", nearest.distance);
 				fprintf(outputFile, "distanceTrue: %lf\n", trueNearestDistance);
 			
 				if(radius > 0)
 				{
-					sort(lResults, numOfLResults, curves);
+					sort(rCurves, numOfRCurves, curves);
 					fprintf(outputFile, "R-near neighbors:\n");
-					for(j=0; j<numOfLResults; j++)
+					for(j=0; j<numOfRCurves; j++)
 					{
-						fprintf(outputFile, "%s\n", curves[lResults[j].curve].id);
+						fprintf(outputFile, "%s\n", curves[rCurves[j]].id);
 					}
 				}
 			}
@@ -394,13 +337,9 @@ int main(int argc, char *argv[])
 				}
 				free(hashInfo[i].gParameters);
 			}
-			free(results[i]);
 		}
 		free(hashInfo);
-		free(results);
-		if(hashType != 'c')
-			free(lResults);
-		free(numOfResults);
+		free(rCurves);
 		
 	}
 	
@@ -425,6 +364,7 @@ int main(int argc, char *argv[])
 	}
 	
 	//Full cleanup
+	fclose(outputFile);
 	free(queryStats);
 	for(i=0; i<curvesNum; i++)
 	{

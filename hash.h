@@ -52,9 +52,7 @@ void destroyHashTable(HashTable *hashTable);
 Bucket *createBucket();
 void insertToBucket(Bucket *bucket, Vector *key, int data);
 void destroyBucket(Bucket *bucket);
-QueryResult *query(Curve *queryCurve, int *numOfResults, Curve *curves, HashInfo *hashInfo, double radius, int k, int d,
-double (*distanceFunction)(Curve*, Curve*), int *nearest);
-void sort(QueryResult *results, int numOfResults, Curve *curves);
+void query(Curve *queryCurve, QueryResult *nearest, int **rCurves, int *numOfRCurves, Curve *curves, HashInfo *hashInfo, double radius, int k, int d, double (*distanceFunction)(Curve*, Curve*));
 int countEntries(Bucket *b);
 
 #endif
