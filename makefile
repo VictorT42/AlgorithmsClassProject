@@ -1,8 +1,8 @@
 CC = gcc -g3 -Wall
-_SRC = main input curves hash metrics
+_SRC = main input curves hash metrics initialization
 SRC = $(patsubst %, %.c, $(_SRC))
 OBJ = $(patsubst %, %.o, $(_SRC))
-HDRS = hash.h curves.h metrics.h
+HDRS = hash.h curves.h metrics.h initialization.h
 OUT = lsh
 	
 all: $(OBJ) $(HDRS)

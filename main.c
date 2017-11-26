@@ -8,6 +8,7 @@
 #include "curves.h"
 #include "hash.h"
 #include "metrics.h"
+#include "initialization.h"
 
 #define VERBOSE 0
 
@@ -85,6 +86,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	
+	srand(time(NULL));
+	
 	//Read input file
 	while(dataset == NULL)
 	{
@@ -94,6 +97,18 @@ int main(int argc, char *argv[])
 	}
 	curves = readCurves(dataset, &dimension, &curvesNum, NULL);
 	fclose(dataset);
+	
+	
+	
+	
+	//TEST CLUSTERING
+	int *centroids = k_means_pp(5, curvesNum, curves);
+	for(i=0; i<5; i++)
+		printf("%d\n", centroids[i]);
+	
+	
+	
+	
 	
 	//Read query file
 	while(queryFile == NULL)
@@ -118,8 +133,6 @@ int main(int argc, char *argv[])
 		end = clock();
 		queryStats[i].tTrue = end-start / (double)CLOCKS_PER_SEC;
 	}
-	
-	srand(time(NULL));
 	
 	//Find max curve length
 	maxCurveLength = 0;
