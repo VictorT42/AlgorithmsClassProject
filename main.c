@@ -9,6 +9,7 @@
 #include "hash.h"
 #include "metrics.h"
 #include "initialization.h"
+#include "assignment.h"
 
 #define VERBOSE 0
 
@@ -97,18 +98,6 @@ int main(int argc, char *argv[])
 	}
 	curves = readCurves(dataset, &dimension, &curvesNum, NULL);
 	fclose(dataset);
-	
-	
-	
-	
-	//TEST CLUSTERING
-	int *centroids = k_means_pp(5, curvesNum, curves);
-	for(i=0; i<5; i++)
-		printf("%d\n", centroids[i]);
-	
-	
-	
-	
 	
 	//Read query file
 	while(queryFile == NULL)
@@ -233,7 +222,7 @@ int main(int argc, char *argv[])
 					}
 				}
 				
-				hashInfo[m].hashTable = createHashTable(curvesNum / 2);
+				hashInfo[m].hashTable = createHashTable(curvesNum / 8);
 				
 				for(i=0; i<curvesNum; i++)
 				{
@@ -246,6 +235,56 @@ int main(int argc, char *argv[])
 			free(g_u->coordinates);
 			free(g_u);
 		}
+		
+		
+		
+		
+	
+	
+	
+	
+		
+		//TEST CLUSTERING
+		int k_of_means_fame=5;
+		double **distances = malloc(curvesNum*sizeof(double*));
+		for(i=0; i<curvesNum; i++)
+		{
+			distances[i] = malloc(i*sizeof(double));
+			for(j=0; j<i; j++)
+			{
+				distances[i][j] = INFINITY;
+			}
+		}
+		
+		int *clusters = malloc(curvesNum*sizeof(int));
+		int *centroids=malloc(k_of_means_fame*sizeof(int));  // = k_means_pp(k_of_means_fame, curvesNum, curves, distances);
+		// for(i=0; i<k_of_means_fame; i++)
+			// printf("%d\n", centroids[i]);
+		
+		for(i=0;i<k_of_means_fame;i++)
+			centroids[i]=i;
+		// lloyds(curves, curvesNum, centroids, clusters, k_of_means_fame, distances, distanceFunction);
+		range_search(curves, curvesNum, centroids, clusters, k_of_means_fame, distances,
+		distanceFunction, hashInfo, l, k, dimension);
+		
+		int sum[k_of_means_fame];
+		for(i=0; i<k_of_means_fame; i++)
+			sum[i]=0;
+		
+		for(i=0;i<curvesNum;i++)
+		{
+			sum[clusters[i]]++;
+		}
+		for(i=0;i<k_of_means_fame;i++)
+			printf("cluster %d: %d points\n", centroids[i], sum[i]);
+			
+		
+		return 0;
+	
+	
+	
+		
+		
 		
 		
 		//Run the queries

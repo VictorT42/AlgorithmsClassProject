@@ -8,7 +8,7 @@
 #define P_ACCURACY 1000000
 #define CENTROID -1
 
-int *random_selection(int k, int numOfCurves, Curve *curves)
+int *random_selection(int k, int numOfCurves, Curve *curves, double **distances)
 {
 	int i, j;
 	int *centroids;
@@ -38,22 +38,19 @@ int *random_selection(int k, int numOfCurves, Curve *curves)
 	
 }
 
-int *k_means_pp(int k, int numOfCurves, Curve *curves)
+int *k_means_pp(int k, int numOfCurves, Curve *curves, double **distances)
 {
 	int i, j, l;
 	int *centroids;
 	double *D, *P;
-	double **distances;
 	double x;
 	int r;
 	int same;
+	double *tempDistance;
 	
 	centroids = malloc(k * sizeof(int));
 	D = malloc(numOfCurves * sizeof(double));
 	P = malloc(numOfCurves * sizeof(double));
-	distances = malloc(k * sizeof(double*));
-	for(i=0; i<k; i++)
-		distances[i] = malloc(numOfCurves * sizeof(double));
 	
 	for(i=0; i<numOfCurves; i++)
 		D[i] = INFINITY;
@@ -78,9 +75,13 @@ int *k_means_pp(int k, int numOfCurves, Curve *curves)
 				continue;
 			}
 			
-			distances[i-1][j] = dfd(&(curves[j]), &(curves[centroids[i-1]]));
-			if(distances[i-1][j] < D[j])
-				D[j] = distances[i-1][j];
+			if(centroids[i-1] > j)
+				tempDistance = &(distances[centroids[i-1]][j]);
+			else
+				tempDistance = &(distances[j][centroids[i-1]]);
+			*tempDistance = dfd(&(curves[j]), &(curves[centroids[i-1]]));
+			if(*tempDistance < D[j])
+				D[j] = *tempDistance;
 			
 			P[j] = D[j] * D[j];
 			l = j-1;
@@ -105,9 +106,6 @@ int *k_means_pp(int k, int numOfCurves, Curve *curves)
 		centroids[i] = r;
 	}
 	
-	for(i=0; i<k; i++)
-		free(distances[i]);
-	free(distances);
 	free(D);
 	free(P);
 	
