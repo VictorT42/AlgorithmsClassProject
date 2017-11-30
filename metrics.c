@@ -60,7 +60,7 @@ double dfd(Curve *p1, Curve *p2)
 	int i, j;
 	double min, result;
 	int m1 = p1->numOfPoints, m2 = p2->numOfPoints;
-	int distance;
+	double distance;
 	
 	c = malloc(m1 * sizeof(double*));
 	for(i=0; i < m1; i++)

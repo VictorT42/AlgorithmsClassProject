@@ -10,7 +10,7 @@ Curve *mdf(Curve *p1, Curve *p2)
 	int i, j;
 	double min;
 	int m1 = p1->numOfPoints, m2 = p2->numOfPoints;
-	int distance;
+	double distance;
 	Curve *mean;
 	Point *tempPoints;
 	
@@ -49,6 +49,7 @@ Curve *mdf(Curve *p1, Curve *p2)
 	}
 	
 	mean = malloc(sizeof(Curve));
+	mean->id = NULL;
 	mean->numOfPoints = 0;
 	i = m1-1;
 	j = m2-1;
@@ -67,7 +68,7 @@ Curve *mdf(Curve *p1, Curve *p2)
 		}
 		else
 		{
-			if(c[i][j-1] < c[i-1][j-1])
+			if(c[i][j-1] > c[i-1][j-1])
 				j--;
 			else
 			{
@@ -96,13 +97,13 @@ Curve *mdf(Curve *p1, Curve *p2)
 		mean->numOfPoints++;
 	}
 	
-	mean->points = malloc(mean->numOfPoints);
-	for(i=mean->numOfPoints; i>=0; i--)
+	mean->points = malloc(mean->numOfPoints * sizeof(Point));
+	for(i=mean->numOfPoints; i>0; i--)
 	{
-		mean->points[mean->numOfPoints-i].x = tempPoints[i].x;  //TODO: Check if need to add -1
-		mean->points[mean->numOfPoints-i].y = tempPoints[i].y;
-		mean->points[mean->numOfPoints-i].z = tempPoints[i].z;
-		mean->points[mean->numOfPoints-i].w = tempPoints[i].w;
+		mean->points[mean->numOfPoints-i].x = tempPoints[i-1].x;
+		mean->points[mean->numOfPoints-i].y = tempPoints[i-1].y;
+		mean->points[mean->numOfPoints-i].z = tempPoints[i-1].z;
+		mean->points[mean->numOfPoints-i].w = tempPoints[i-1].w;
 	}
 	
 	for(i=0; i < m1; i++)
@@ -112,3 +113,100 @@ Curve *mdf(Curve *p1, Curve *p2)
 	return mean;
 	
 }
+
+void meanFrechet(Curve *curves, int curvesNum, int *clusters, int *centroids, int k)
+{
+	int i, j;
+	int *clusterSize;
+	Curve ***treeLevel;
+	Curve **tempCurves;
+	Curve *copyCurve;
+	int newSize;
+	
+	clusterSize = malloc(k*sizeof(int));
+	for(i=0; i<k; i++)
+		clusterSize[i] = 0;
+	
+	for(i=0; i<curvesNum; i++)
+		clusterSize[clusters[i]]++;
+	
+	treeLevel = malloc(k* sizeof(Curve**));
+	tempCurves = malloc(k*sizeof(Curve*));
+	for(i=0; i<k; i++)
+	{
+		treeLevel[i] = malloc(((clusterSize[i] / 2) + 1)*sizeof(Curve*));
+		tempCurves[i] = NULL;
+		clusterSize[i] = 0;
+	}
+	
+	for(i=0; i<curvesNum; i++)
+	{
+		if(tempCurves[clusters[i]] == NULL)
+		{
+			tempCurves[clusters[i]] = &(curves[i]);
+		}
+		else
+		{
+			treeLevel[clusters[i]][clusterSize[clusters[i]]] = mdf(&(curves[i]), tempCurves[clusters[i]]);
+			clusterSize[clusters[i]]++;
+			tempCurves[clusters[i]] = NULL;
+		}
+	}
+	for(i=0; i<k; i++)
+	{
+		if(tempCurves[i] != NULL)
+		{
+			copyCurve = malloc(sizeof(Curve));
+			copyCurve->id = NULL;
+			copyCurve->numOfPoints = tempCurves[i]->numOfPoints;
+			copyCurve->points = malloc((copyCurve->numOfPoints)*sizeof(Point));
+			for(j=0; j<copyCurve->numOfPoints; j++)
+			{
+				copyCurve->points[j].x = tempCurves[i]->points[j].x;
+				copyCurve->points[j].y = tempCurves[i]->points[j].y;
+				copyCurve->points[j].z = tempCurves[i]->points[j].z;
+				copyCurve->points[j].w = tempCurves[i]->points[j].w;
+			}
+			treeLevel[i][clusterSize[i]] = copyCurve;
+			clusterSize[i]++;
+		}
+	}
+	
+	for(i=0; i<k; i++)
+	{
+		while(clusterSize[i] > 1)
+		{
+			copyCurve = treeLevel[i][0];
+			treeLevel[i][0] = mdf(treeLevel[i][0], treeLevel[i][1]);
+			free(copyCurve->points);
+			free(copyCurve);
+			
+			newSize = 1;
+			for(j=2; j<clusterSize[i]-1; j=j+2)
+			{
+				treeLevel[i][newSize] = mdf(treeLevel[i][j], treeLevel[i][j+1]);
+				free(treeLevel[i][j]->points);
+				free(treeLevel[i][j+1]->points);
+				free(treeLevel[i][j]);
+				free(treeLevel[i][j+1]);
+				newSize++;
+			}
+			if(j == clusterSize[i]-1)
+			{
+				treeLevel[i][newSize] = treeLevel[i][j];
+				newSize++;
+			}
+			clusterSize[i] = newSize;
+		}
+		printf("Centroid for cluster %d has %d points:\n", i, treeLevel[i][0]->numOfPoints);
+		for(j=0; j<treeLevel[i][0]->numOfPoints; j++)
+		{
+			if(j==10)
+				break;
+			printf("(%lf, %lf), ", treeLevel[i][0]->points[j].x, treeLevel[i][0]->points[j].y);
+		}
+		printf("\n");
+	}
+	
+}
+

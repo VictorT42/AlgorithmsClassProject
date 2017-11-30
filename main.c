@@ -10,6 +10,7 @@
 #include "metrics.h"
 #include "initialization.h"
 #include "assignment.h"
+#include "update.h"
 
 #define VERBOSE 0
 
@@ -243,6 +244,70 @@ int main(int argc, char *argv[])
 	
 	
 	
+	
+	
+		//TEST mdf
+		// Curve *mean = mdf(&(curves[0]), &(curves[1]));
+		// printf("%d points:\n", mean->numOfPoints);
+		// for(i=0; i<mean->numOfPoints; i++)
+		// {
+			// printf("(%lf, %lf),",mean->points[i].x,mean->points[i].y);
+		// }
+		// return 0;
+		
+		//TEST mfd
+		
+		// Curve c1, c2;
+		// c1.points = malloc(3*sizeof(Point));
+		// c2.points = malloc(3*sizeof(Point));
+		
+		// c1.numOfPoints = 3;
+		// c2.numOfPoints = 3;
+		
+		// c1.points[0].x = 0;
+		// c1.points[0].y = 1;
+		// c1.points[0].z = 0;
+		// c1.points[0].w = 0;
+		
+		// c1.points[1].x = 0;
+		// c1.points[1].y = 2;
+		// c1.points[1].z = 0;
+		// c1.points[1].w = 0;
+		
+		// c1.points[2].x = 0;
+		// c1.points[2].y = 3;
+		// c1.points[2].z = 0;
+		// c1.points[2].w = 0;
+		
+		// c2.points[0].x = 0;
+		// c2.points[0].y = 1;
+		// c2.points[0].z = 0;
+		// c2.points[0].w = 0;
+		
+		// c2.points[1].x = 0;
+		// c2.points[1].y = 1.2;
+		// c2.points[1].z = 0;
+		// c2.points[1].w = 0;
+		
+		// c2.points[2].x = 0;
+		// c2.points[2].y = 2;
+		// c2.points[2].z = 0;
+		// c2.points[2].w = 0;
+		
+		// Curve *mean = mdf(&c1, &c2);
+		// printf("%d points:\n", mean->numOfPoints);
+		// for(i=0; i<mean->numOfPoints; i++)
+		// {
+			// printf("(%lf, %lf),",mean->points[i].x,mean->points[i].y);
+		// }
+		// return 0;
+		
+		
+		// double a=dfd(&c1, &c2);
+		// printf("dfd gives %lf\n", a);
+		// return 0;
+		
+		
 		
 		//TEST CLUSTERING
 		int k_of_means_fame=5;
@@ -263,9 +328,9 @@ int main(int argc, char *argv[])
 		
 		for(i=0;i<k_of_means_fame;i++)
 			centroids[i]=i;
-		// lloyds(curves, curvesNum, centroids, clusters, k_of_means_fame, distances, distanceFunction);
-		range_search(curves, curvesNum, centroids, clusters, k_of_means_fame, distances,
-		distanceFunction, hashInfo, l, k, dimension);
+		lloyds(curves, curvesNum, centroids, clusters, k_of_means_fame, distances, distanceFunction);
+		// range_search(curves, curvesNum, centroids, clusters, k_of_means_fame, distances,
+		// distanceFunction, hashInfo, l, k, dimension);
 		
 		int sum[k_of_means_fame];
 		for(i=0; i<k_of_means_fame; i++)
@@ -276,8 +341,10 @@ int main(int argc, char *argv[])
 			sum[clusters[i]]++;
 		}
 		for(i=0;i<k_of_means_fame;i++)
-			printf("cluster %d: %d points\n", centroids[i], sum[i]);
+			printf("cluster %d: %d members\n", centroids[i], sum[i]);
 			
+			puts("bob");
+		meanFrechet(curves, curvesNum, clusters, centroids, k_of_means_fame);
 		
 		return 0;
 	
