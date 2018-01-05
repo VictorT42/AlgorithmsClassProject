@@ -1,6 +1,7 @@
 //File update.c
 
 #include <stdlib.h>
+#include <math.h>
 #include "curves.h"
 #include "metrics.h"
 
@@ -174,12 +175,17 @@ void meanFrechet(Curve *curves, int curvesNum, int *clusters, int *centroids, in
 	
 	for(i=0; i<k; i++)
 	{
+		if(clusterSize[i] == 0)  //If cluster is empty
+			continue;
+		
 		while(clusterSize[i] > 1)
 		{
 			copyCurve = treeLevel[i][0];
 			treeLevel[i][0] = mdf(treeLevel[i][0], treeLevel[i][1]);
 			free(copyCurve->points);
 			free(copyCurve);
+			free(treeLevel[i][1]->points);
+			free(treeLevel[i][1]);
 			
 			newSize = 1;
 			for(j=2; j<clusterSize[i]-1; j=j+2)
@@ -198,15 +204,67 @@ void meanFrechet(Curve *curves, int curvesNum, int *clusters, int *centroids, in
 			}
 			clusterSize[i] = newSize;
 		}
-		printf("Centroid for cluster %d has %d points:\n", i, treeLevel[i][0]->numOfPoints);
-		for(j=0; j<treeLevel[i][0]->numOfPoints; j++)
-		{
-			if(j==10)
-				break;
-			printf("(%lf, %lf), ", treeLevel[i][0]->points[j].x, treeLevel[i][0]->points[j].y);
-		}
-		printf("\n");
+		
+		if(centroids[i] >= curvesNum)
+			free(curves[curvesNum+i].points);
+		else
+			centroids[i] = curvesNum + i;
+		
+		curves[curvesNum+i].numOfPoints = treeLevel[i][0]->numOfPoints;
+		curves[curvesNum+i].points = treeLevel[i][0]->points;
+		free(treeLevel[i][0]);
+		
 	}
 	
+	//Cleanup
+	for(i=0; i<k; i++)
+		free(treeLevel[i]);
+	free(treeLevel);
+	free(clusterSize);
+	free(tempCurves);
+	
+}
+
+
+void pam(Curve *curves, int curvesNum, int *clusters, int *centroids, int k, double **distances, double (*distanceFunction)(Curve*, Curve*))
+{
+	int i,j,m;
+	double objective;
+	double *tempDistance;
+	double minObjective;
+	int bestCentroid;
+	
+	for(i=0; i<k; i++)
+	{
+		minObjective = INFINITY;
+		for(j=0; j<curvesNum; j++)
+		{
+			if(clusters[j] != i)
+				continue;
+			
+			objective = 0;
+			for(m=0; m<curvesNum; m++)
+			{
+				if(clusters[m] != i)
+					continue;
+				if(m == j)
+					continue;
+				
+				if(m > j)
+					tempDistance = &(distances[m][j]);
+				else
+					tempDistance = &(distances[j][m]);
+				if(*tempDistance == INFINITY)
+					*tempDistance = distanceFunction(&(curves[m]), &(curves[j]));
+				objective += *tempDistance;
+			}
+			if(objective < minObjective)
+			{
+				minObjective = objective;
+				bestCentroid = j;
+			}
+		}
+		centroids[i] = bestCentroid;
+	}
 }
 
