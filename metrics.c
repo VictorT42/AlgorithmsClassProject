@@ -2,6 +2,10 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_cblas.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_linalg.h>
 #include "curves.h"
 #include "metrics.h"
 
@@ -200,5 +204,108 @@ double silhouette(Curve *curves, int curvesNum, double **distances, int *centroi
 	
 	return sum/curvesInClusters[cluster];
 	
+}
+
+
+double cRMSD(Curve *p1, Curve *p2)
+{
+	Point xc, yc;
+	gsl_matrix *x, *y, *xt, *xty, *v, *q, *m, *mt, *mtm;
+	gsl_vector *s, *work;
+	int i;
+	int n = p1->numOfPoints;
+	double determinant;
+	gsl_permutation *p;
+	int signum;
+	double result;
+	
+	//Find centroids
+	xc.x = 0;
+	xc.y = 0;
+	xc.z = 0;
+	yc.x = 0;
+	yc.y = 0;
+	yc.z = 0;
+	
+	for(i=0; i<n; i++)
+	{
+		xc.x += p1->points[i].x;
+		xc.y += p1->points[i].y;
+		xc.z += p1->points[i].z;
+		yc.x += p2->points[i].x;
+		yc.y += p2->points[i].y;
+		yc.z += p2->points[i].z;
+	}
+	xc.x /= n;
+	xc.y /= n;
+	xc.z /= n;
+	yc.x /= n;
+	yc.y /= n;
+	yc.z /= n;
+	
+	//Create the matrices and subtract the centroids
+	x = gsl_matrix_alloc(n, 3);
+	y = gsl_matrix_alloc(n, 3);
+	
+	for(i=0; i<n; i++)
+	{
+		gsl_matrix_set(x, i, 0, p1->points[i].x - xc.x);
+		gsl_matrix_set(x, i, 1, p1->points[i].y - xc.y);
+		gsl_matrix_set(x, i, 2, p1->points[i].z - xc.z);
+		gsl_matrix_set(y, i, 0, p2->points[i].x - yc.x);
+		gsl_matrix_set(y, i, 1, p2->points[i].y - yc.y);
+		gsl_matrix_set(y, i, 2, p2->points[i].z - yc.z);
+	}
+	
+	//Transpose x
+	xt = gsl_matrix_alloc(3, n);
+	gsl_matrix_transpose_memcpy(xt, x);
+	
+	//Multiply xt*y
+	xty = gsl_matrix_alloc(3,3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, xt, y, 0.0, xty);
+	
+	//SVD
+	s = gsl_vector_alloc(3);
+	work = gsl_vector_alloc(3);
+	v = gsl_matrix_alloc(3,3);
+	gsl_linalg_SV_decomp(xty, v, s, work);
+	gsl_matrix_transpose(v);
+	
+	//Multiply u*v^t
+	q = gsl_matrix_alloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, xty, v, 0.0, q);
+	
+	//Find det|q|
+	p = gsl_permutation_alloc(3);
+	gsl_linalg_LU_decomp(q, p, &signum);
+	determinant = gsl_linalg_LU_det(q, signum);
+	
+	if(determinant < 0)
+	{
+		for(i=0; i<3; i++)
+			gsl_matrix_set(xty, i, 2, gsl_matrix_get(xty, i, 2) * -1);
+		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, xty, v, 0.0, q);
+	}
+	
+	//Find m=x*q-y
+	m = gsl_matrix_alloc(n, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, x, q, 0.0, m);
+	gsl_matrix_sub(m, y);
+	
+	//Find m*m^t
+	mt = gsl_matrix_alloc(3, n);
+	gsl_matrix_transpose_memcpy(mt, m);
+	mtm = gsl_matrix_alloc(3,3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, mt, m, 0.0, mtm);
+	
+	//Find the trace
+	result = 0;
+	for(i=0; i<3; i++)
+		result += gsl_matrix_get(mtm, i, i);
+	
+	result = result / sqrt(n);
+	
+	return result;
 }
 

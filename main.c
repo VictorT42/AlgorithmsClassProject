@@ -32,7 +32,7 @@ void readConf(FILE *confFile, int *k_of_means_fame, int *k, int *l)
 
 int main(int argc, char *argv[])
 {
-	int i;
+	// int i=0;
 	int d, curvesNum;
 	FILE *inputFile=NULL;
 	Curve *curves;
@@ -40,10 +40,21 @@ int main(int argc, char *argv[])
 	inputFile = fopen("bio_small_input.dat", "r");
 	curves = readCurves(inputFile, &d, &curvesNum, NULL);
 	
-	for(i=0; i<curvesNum; i++)
-	{
-		printf("curve %d : %d points\n", i, curves[i].numOfPoints);
-	}
+	
+	// for(i=0; i<curvesNum; i++)
+	// {
+		// printf("curve %d : %d points\n", i, curves[i].numOfPoints);
+	// }
+	
+	int a,b;
+	a=0;
+	b=1;
+	
+	// for(i=0; i<10; i++)
+		// printf("%lf\t%lf\t%lf\t\t%lf\t%lf\t%lf\n", curves[a].points[i].x, curves[a].points[i].y, curves[a].points[i].z
+	// , curves[b].points[i].x, curves[b].points[i].y, curves[b].points[i].z);
+	
+	printf("crmsd of %d and %d is %lf\n", a,b, cRMSD(&(curves[a]), &(curves[b])));
 	
 	fclose(inputFile);
 	

@@ -7,4 +7,5 @@ double dtw(Curve*, Curve*);
 double dfd(Curve*, Curve*);
 // double dist(Point a1, Point a2);
 double silhouette(Curve*, int, double**, int*, int*, int, int, int*, double (*distanceFunction)(Curve*, Curve*));
+double cRMSD(Curve *p1, Curve *p2);
 
