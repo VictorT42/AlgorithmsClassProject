@@ -23,6 +23,35 @@ int countLines(FILE *input)
 	return lines;
 }
 
+
+Curve *readCurves(FILE *input, int *d, int *curvesNum, double *r)
+{
+	int n;
+	int i, j;
+	Curve *curves;
+	
+	*d = 3;
+	
+	fscanf(input, "%d\n", curvesNum);
+	fscanf(input, "%d\n", &n);
+	
+	curves = malloc(*curvesNum * sizeof(Curve));
+	for(i=0; i<*curvesNum; i++)
+	{
+		curves[i].id = NULL;
+		curves[i].numOfPoints = n;
+		curves[i].points = malloc(n *sizeof(Point));
+		for(j=0; j<n; j++)
+		{
+			fscanf(input, "%lf %lf %lf\n", &(curves[i].points[j].x), &(curves[i].points[j].y), &(curves[i].points[j].z));
+		}
+	}
+	
+	return curves;
+	
+}
+
+/*
 Curve *readCurves(FILE *input, int *d, int *curvesNum, double *r)
 {
 	char buffer[1024];
@@ -72,4 +101,6 @@ Curve *readCurves(FILE *input, int *d, int *curvesNum, double *r)
 	
 	return curves;
 }
+)
 
+*/

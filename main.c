@@ -32,6 +32,28 @@ void readConf(FILE *confFile, int *k_of_means_fame, int *k, int *l)
 
 int main(int argc, char *argv[])
 {
+	int i;
+	int d, curvesNum;
+	FILE *inputFile=NULL;
+	Curve *curves;
+	
+	inputFile = fopen("bio_small_input.dat", "r");
+	curves = readCurves(inputFile, &d, &curvesNum, NULL);
+	
+	for(i=0; i<curvesNum; i++)
+	{
+		printf("curve %d : %d points\n", i, curves[i].numOfPoints);
+	}
+	
+	fclose(inputFile);
+	
+	return 0;
+	
+}
+
+
+int main2(int argc, char *argv[])
+{
 	int i, j, m;
 	FILE *inputFile=NULL, *confFile=NULL, *outputFile=NULL;
 	double (*distanceFunction)(Curve*, Curve*) = (*dfd);
