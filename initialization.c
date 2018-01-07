@@ -8,7 +8,7 @@
 #define P_ACCURACY 1000000
 #define CENTROID -1
 
-int *random_selection(int k, int numOfCurves, Curve *curves, double **distances)
+int *random_selection(int k, int numOfCurves, Curve *curves, double **distances, double (*distanceFunction)(Curve*, Curve*))
 {
 	int i, j;
 	int *centroids;
@@ -38,7 +38,7 @@ int *random_selection(int k, int numOfCurves, Curve *curves, double **distances)
 	
 }
 
-int *k_means_pp(int k, int numOfCurves, Curve *curves, double **distances)
+int *k_means_pp(int k, int numOfCurves, Curve *curves, double **distances, double (*distanceFunction)(Curve*, Curve*))
 {
 	int i, j, l;
 	int *centroids;
@@ -79,7 +79,7 @@ int *k_means_pp(int k, int numOfCurves, Curve *curves, double **distances)
 				tempDistance = &(distances[centroids[i-1]][j]);
 			else
 				tempDistance = &(distances[j][centroids[i-1]]);
-			*tempDistance = dfd(&(curves[j]), &(curves[centroids[i-1]]));
+			*tempDistance = distanceFunction(&(curves[j]), &(curves[centroids[i-1]]));
 			if(*tempDistance < D[j])
 				D[j] = *tempDistance;
 			

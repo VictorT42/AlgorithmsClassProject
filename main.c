@@ -32,29 +32,130 @@ void readConf(FILE *confFile, int *k_of_means_fame, int *k, int *l)
 
 int main(int argc, char *argv[])
 {
-	// int i=0;
+	int i, j;
 	int d, curvesNum;
-	FILE *inputFile=NULL;
+	FILE *inputFile=NULL, *outputFile=stdout;
 	Curve *curves;
+	int *clusters, *previousClusters, *centroids, *curvesInClusters;
+	int k_of_means_fame = 5;
+	double **distances;
+	double (*distanceFunction)(Curve*, Curve*) = (*cRMSD);
+	int assignments;
+	double s_i, s_total;
 	
 	inputFile = fopen("bio_small_input.dat", "r");
+	
+	//Get command line arguments
+	for(i=1; i<argc; i+=2)
+	{
+		if(!strcmp(argv[i], "-i"))
+			inputFile = fopen(argv[i+1], "r");
+		else if(!strcmp(argv[i], "-o"))
+			outputFile = fopen(argv[i+1], "w");
+		else if(!strcmp(argv[i], "-k"))
+			k_of_means_fame = atoi(argv[i+1]);
+		else if(!strcmp(argv[i], "-d"))
+			distanceFunction = (!strcmp(argv[i+1], "Frechet")) ? trDFD : cRMSD;
+		else
+		{
+			printf("Invalid argument %s\n", argv[i]);
+			i--;
+		}
+	}
+	
+	if(inputFile == NULL)
+	{
+		printf("Invalid or no input file given.\n");
+		return 0;
+	}
+	if(outputFile == NULL)
+		outputFile = fopen("crmsd.dat", "w");
+	
+	srand(time(NULL));
+	
+	
+	//Read curves
 	curves = readCurves(inputFile, &d, &curvesNum, NULL);
 	
 	
-	// for(i=0; i<curvesNum; i++)
-	// {
-		// printf("curve %d : %d points\n", i, curves[i].numOfPoints);
-	// }
 	
-	int a,b;
-	a=0;
-	b=1;
 	
-	// for(i=0; i<10; i++)
-		// printf("%lf\t%lf\t%lf\t\t%lf\t%lf\t%lf\n", curves[a].points[i].x, curves[a].points[i].y, curves[a].points[i].z
-	// , curves[b].points[i].x, curves[b].points[i].y, curves[b].points[i].z);
 	
-	printf("crmsd of %d and %d is %lf\n", a,b, cRMSD(&(curves[a]), &(curves[b])));
+	
+	//test
+	trDFD(&(curves[0]), &(curves[1]));
+	
+	
+	
+	
+	
+	//K-Means
+	distances = malloc(curvesNum*sizeof(double*));
+	for(i=0; i<curvesNum; i++)
+	{
+		distances[i] = malloc(i*sizeof(double));
+		for(j=0; j<i; j++)
+			distances[i][j] = INFINITY;
+	}
+	curvesInClusters = malloc(k_of_means_fame*sizeof(int));
+	
+	//Initialization
+	clusters = malloc(curvesNum*sizeof(int));
+	previousClusters = malloc(curvesNum*sizeof(int));
+	centroids = k_means_pp(k_of_means_fame, curvesNum, curves, distances, distanceFunction);
+	
+	//Assignment
+	lloyds(curves, curvesNum, centroids, clusters, k_of_means_fame, distances, distanceFunction);
+	
+	for(j=0; j<MAX_LOOPS; j++)
+	{
+		memcpy(previousClusters, clusters, curvesNum*sizeof(int));
+		pam(curves, curvesNum, clusters, centroids, k_of_means_fame, distances, distanceFunction);
+		lloyds(curves, curvesNum, centroids, clusters, k_of_means_fame, distances, distanceFunction);
+		assignments = 0;
+		for(i=0; i<curvesNum; i++)
+			if(clusters[i] != previousClusters[i])
+				assignments++;
+		
+		if(assignments < (curvesNum*END_FACTOR))
+			break;
+	}
+	
+	//Find size of clusters
+	for(i=0; i<k_of_means_fame; i++)
+		curvesInClusters[i] = 0;
+	for(i=0; i<curvesNum; i++)
+		curvesInClusters[clusters[i]]++;
+	
+	//Print results
+	fprintf(outputFile, "k: %d\n", k_of_means_fame);
+	
+	s_total=0;
+	for(i=0; i<k_of_means_fame; i++)
+	{
+		s_i = silhouette(curves, curvesNum, distances, centroids, clusters, i, k_of_means_fame, curvesInClusters, distanceFunction);
+		s_total += s_i*curvesInClusters[i];
+	}
+	fprintf(outputFile, "s: %lf\n", s_total/curvesNum);
+	
+	for(i=0; i<k_of_means_fame; i++)
+	{
+		for(j=0; j<curvesNum; j++)
+		{
+			if(clusters[j] == i)
+				fprintf(outputFile, "%d\t", j+1);
+		}
+		fprintf(outputFile, "\n");
+	}
+	
+	free(centroids);
+	free(clusters);
+	free(previousClusters);
+	
+	
+	
+	
+	
 	
 	fclose(inputFile);
 	
@@ -62,7 +163,7 @@ int main(int argc, char *argv[])
 	
 }
 
-
+/*
 int main2(int argc, char *argv[])
 {
 	int i, j, m;
@@ -940,4 +1041,4 @@ int main2(int argc, char *argv[])
 	
 	return 0;
 }
-
+*/
