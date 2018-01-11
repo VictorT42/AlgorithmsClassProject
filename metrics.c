@@ -222,9 +222,11 @@ double cRMSD(Curve *p1, Curve *p2)
 	xc.x = 0;
 	xc.y = 0;
 	xc.z = 0;
+	xc.w = 0;
 	yc.x = 0;
 	yc.y = 0;
 	yc.z = 0;
+	yc.w = 0;
 	
 	for(i=0; i<n; i++)
 	{
@@ -336,15 +338,17 @@ double trDFD(Curve *p1, Curve *p2)
 	double determinant;
 	gsl_permutation *p;
 	int signum;
-	Curve *larissa, *penios;
+	Curve *trP1, *trP2;
 	
 	//Find centroids
 	xc.x = 0;
 	xc.y = 0;
 	xc.z = 0;
+	xc.w = 0;
 	yc.x = 0;
 	yc.y = 0;
 	yc.z = 0;
+	yc.w = 0;
 	
 	for(i=0; i<n; i++)
 	{
@@ -411,23 +415,25 @@ double trDFD(Curve *p1, Curve *p2)
 	m = gsl_matrix_alloc(n, 3);
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, x, q, 0.0, m);
 	
-	larissa = malloc(sizeof(Curve));
-	penios = malloc(sizeof(Curve));
-	larissa->numOfPoints = n;
-	penios->numOfPoints = n;
-	larissa->points = malloc(n*sizeof(Point));
-	penios->points = malloc(n*sizeof(Point));
+	trP1 = malloc(sizeof(Curve));
+	trP2 = malloc(sizeof(Curve));
+	trP1->numOfPoints = n;
+	trP2->numOfPoints = n;
+	trP1->points = malloc(n*sizeof(Point));
+	trP2->points = malloc(n*sizeof(Point));
 	for(i=0; i<n; i++)
 	{
-		larissa->points[i].x = gsl_matrix_get(m, i, 0);
-		larissa->points[i].y = gsl_matrix_get(m, i, 1);
-		larissa->points[i].z = gsl_matrix_get(m, i, 2);
-		penios->points[i].x = gsl_matrix_get(y, i, 0);
-		penios->points[i].y = gsl_matrix_get(y, i, 1);
-		penios->points[i].z = gsl_matrix_get(y, i, 2);
+		trP1->points[i].x = gsl_matrix_get(m, i, 0);
+		trP1->points[i].y = gsl_matrix_get(m, i, 1);
+		trP1->points[i].z = gsl_matrix_get(m, i, 2);
+		trP1->points[i].w = 0;
+		trP2->points[i].x = gsl_matrix_get(y, i, 0);
+		trP2->points[i].y = gsl_matrix_get(y, i, 1);
+		trP2->points[i].z = gsl_matrix_get(y, i, 2);
+		trP2->points[i].w = 0;
 	}
 	
-	return dfd(larissa, penios);
+	return dfd(trP1, trP2);
 	
 }
 

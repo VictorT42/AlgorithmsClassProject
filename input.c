@@ -44,6 +44,7 @@ Curve *readCurves(FILE *input, int *d, int *curvesNum, double *r)
 		for(j=0; j<n; j++)
 		{
 			fscanf(input, "%lf %lf %lf\n", &(curves[i].points[j].x), &(curves[i].points[j].y), &(curves[i].points[j].z));
+			curves[i].points[j].w = 0;
 		}
 	}
 	
