@@ -331,7 +331,7 @@ double cRMSD(Curve *p1, Curve *p2)
 double trDFD(Curve *p1, Curve *p2)
 {
 	Point xc, yc;
-	int n = p1->numOfPoints;
+	int n = (p1->numOfPoints < p2->numOfPoints) ? p1->numOfPoints : p2->numOfPoints;
 	int i;
 	gsl_matrix *x, *y, *xt, *xty, *v, *q, *m;
 	gsl_vector *s, *work;
@@ -434,6 +434,115 @@ double trDFD(Curve *p1, Curve *p2)
 	}
 	
 	return dfd(trP1, trP2);
+	
+}
+
+double trDTW(Curve *p1, Curve *p2)
+{
+	Point xc, yc;
+	int n = (p1->numOfPoints < p2->numOfPoints) ? p1->numOfPoints : p2->numOfPoints;
+	int i;
+	gsl_matrix *x, *y, *xt, *xty, *v, *q, *m;
+	gsl_vector *s, *work;
+	double determinant;
+	gsl_permutation *p;
+	int signum;
+	Curve *trP1, *trP2;
+	
+	//Find centroids
+	xc.x = 0;
+	xc.y = 0;
+	xc.z = 0;
+	xc.w = 0;
+	yc.x = 0;
+	yc.y = 0;
+	yc.z = 0;
+	yc.w = 0;
+	
+	for(i=0; i<n; i++)
+	{
+		xc.x += p1->points[i].x;
+		xc.y += p1->points[i].y;
+		xc.z += p1->points[i].z;
+		yc.x += p2->points[i].x;
+		yc.y += p2->points[i].y;
+		yc.z += p2->points[i].z;
+	}
+	xc.x /= n;
+	xc.y /= n;
+	xc.z /= n;
+	yc.x /= n;
+	yc.y /= n;
+	yc.z /= n;
+	
+	//Create the matrices and subtract the centroids
+	x = gsl_matrix_alloc(n, 3);
+	y = gsl_matrix_alloc(n, 3);
+	
+	for(i=0; i<n; i++)
+	{
+		gsl_matrix_set(x, i, 0, p1->points[i].x - xc.x);
+		gsl_matrix_set(x, i, 1, p1->points[i].y - xc.y);
+		gsl_matrix_set(x, i, 2, p1->points[i].z - xc.z);
+		gsl_matrix_set(y, i, 0, p2->points[i].x - yc.x);
+		gsl_matrix_set(y, i, 1, p2->points[i].y - yc.y);
+		gsl_matrix_set(y, i, 2, p2->points[i].z - yc.z);
+	}
+	
+	//Transpose x
+	xt = gsl_matrix_alloc(3, n);
+	gsl_matrix_transpose_memcpy(xt, x);
+	
+	//Multiply xt*y
+	xty = gsl_matrix_alloc(3,3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, xt, y, 0.0, xty);
+	
+	//SVD
+	s = gsl_vector_alloc(3);
+	work = gsl_vector_alloc(3);
+	v = gsl_matrix_alloc(3,3);
+	gsl_linalg_SV_decomp(xty, v, s, work);
+	gsl_matrix_transpose(v);
+	
+	//Multiply u*v^t
+	q = gsl_matrix_alloc(3, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, xty, v, 0.0, q);
+	
+	//Find det|q|
+	p = gsl_permutation_alloc(3);
+	gsl_linalg_LU_decomp(q, p, &signum);
+	determinant = gsl_linalg_LU_det(q, signum);
+	
+	if(determinant < 0)
+	{
+		for(i=0; i<3; i++)
+			gsl_matrix_set(xty, i, 2, gsl_matrix_get(xty, i, 2) * -1);
+		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, xty, v, 0.0, q);
+	}
+	
+	//Find m=x*q-y
+	m = gsl_matrix_alloc(n, 3);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, x, q, 0.0, m);
+	
+	trP1 = malloc(sizeof(Curve));
+	trP2 = malloc(sizeof(Curve));
+	trP1->numOfPoints = n;
+	trP2->numOfPoints = n;
+	trP1->points = malloc(n*sizeof(Point));
+	trP2->points = malloc(n*sizeof(Point));
+	for(i=0; i<n; i++)
+	{
+		trP1->points[i].x = gsl_matrix_get(m, i, 0);
+		trP1->points[i].y = gsl_matrix_get(m, i, 1);
+		trP1->points[i].z = gsl_matrix_get(m, i, 2);
+		trP1->points[i].w = 0;
+		trP2->points[i].x = gsl_matrix_get(y, i, 0);
+		trP2->points[i].y = gsl_matrix_get(y, i, 1);
+		trP2->points[i].z = gsl_matrix_get(y, i, 2);
+		trP2->points[i].w = 0;
+	}
+	
+	return dtw(trP1, trP2);
 	
 }
 

@@ -4,7 +4,7 @@
 #define HASH
 
 #define INITIAL_RESULTS_SIZE 32
-#define BUCKET_SIZE 32
+#define BUCKET_SIZE 256
 #define K_VEC 3
 #define W 4
 #define M ((long)2<<31) - 5

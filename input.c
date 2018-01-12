@@ -52,56 +52,35 @@ Curve *readCurves(FILE *input, int *d, int *curvesNum, double *r)
 	
 }
 
-/*
-Curve *readCurves(FILE *input, int *d, int *curvesNum, double *r)
+Curve *readRoads(FILE *input, int *d, int *curvesNum, double *r)
 {
-	char buffer[1024];
-	double parameter;
 	int i, j;
 	Curve *curves;
 	
 	*curvesNum = countLines(input);
 	
-	fscanf(input, "%s %lf", buffer, &parameter);
-	if(!strcmp(buffer, "@dimension"))
-	{
-		*d = (int)parameter;
-		(*curvesNum)--;
-	}
-	else if(!strcmp(buffer, "R:"))
-	{
-		*r = parameter;
-		(*curvesNum)--;
-	}
-	else
-	{
-		fseek(input, 0, SEEK_SET);
-	}
+	*d = 2;
 	
 	curves = malloc(*curvesNum * sizeof(Curve));
 	
 	for(i=0; i<(*curvesNum); i++)
 	{
 		curves[i].id = malloc(BUFFER_SIZE);
-		fscanf(input, "%s\t%d\t", curves[i].id, &(curves[i].numOfPoints));
+		fscanf(input, "%*d, %s %d, ", curves[i].id, &(curves[i].numOfPoints));
+		curves[i].id[strlen(curves[i].id)-1] = '\0';  //Delete the comma
 		curves[i].points = malloc(curves[i].numOfPoints * sizeof(Point));
-		for(j=0; j < curves[i].numOfPoints; j++)
+		for(j=0; j < curves[i].numOfPoints - 1; j++)
 		{
-			fscanf(input, "(%lf, %lf", &(curves[i].points[j].x), &(curves[i].points[j].y));
-			if(*d > 2)
-				fscanf(input, ", %lf", &(curves[i].points[j].z));
-			else
-				curves[i].points[j].z = 0;
-			if(*d > 3)
-				fscanf(input, ", %lf", &(curves[i].points[j].w));
-			else
-				curves[i].points[j].w = 0;
-			fscanf(input, "), ");
+			fscanf(input, "%lf, %lf, ", &(curves[i].points[j].x), &(curves[i].points[j].y));
+			curves[i].points[j].z = 0;
+			curves[i].points[j].w = 0;
 		}
+		fscanf(input, "%lf, %lf", &(curves[i].points[j].x), &(curves[i].points[j].y));
+		curves[i].points[j].z = 0;
+		curves[i].points[j].w = 0;
 	}
 	
 	return curves;
 }
-)
 
-*/
+

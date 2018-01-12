@@ -5,7 +5,7 @@
 #include "curves.h"
 #include "metrics.h"
 
-#define P_ACCURACY 1000000
+#define P_ACCURACY 10000000
 #define CENTROID -1
 
 int *random_selection(int k, int numOfCurves, Curve *curves, double **distances, double (*distanceFunction)(Curve*, Curve*))
@@ -95,7 +95,7 @@ int *k_means_pp(int k, int numOfCurves, Curve *curves, double **distances, doubl
 			if(P[j] != CENTROID)
 				break;
 			
-		x = rand() % (int) (P_ACCURACY * P[j]);
+		x = rand() % (long) (P_ACCURACY * P[j]);
 		x = x / (double) (P_ACCURACY);
 		
 		for(r=0; r<numOfCurves; r++)

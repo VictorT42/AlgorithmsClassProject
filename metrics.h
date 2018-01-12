@@ -9,4 +9,5 @@ double dfd(Curve*, Curve*);
 double silhouette(Curve*, int, double**, int*, int*, int, int, int*, double (*distanceFunction)(Curve*, Curve*));
 double cRMSD(Curve *p1, Curve *p2);
 double trDFD(Curve *p1, Curve *p2);
+double trDTW(Curve *p1, Curve *p2);
 
