@@ -5,7 +5,7 @@
 #include <string.h>
 #include "curves.h"
 
-#define BUFFER_SIZE 8
+#define BUFFER_SIZE 16
 
 int countLines(FILE *input)
 {

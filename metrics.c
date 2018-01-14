@@ -307,23 +307,18 @@ double cRMSD(Curve *p1, Curve *p2)
 	
 	result = result / sqrt(n);
 	
-	
-	
-	
-	// puts("X");
-	// for(i=0; i<3; i++){
-		// for(j=0; j<3; j++){
-			// printf("%lf ", gsl_matrix_get(x,i,j));
-		// }
-		// puts("");
-	// }
-	// puts("Y");
-	// for(i=0; i<3; i++){
-		// for(j=0; j<3; j++){
-			// printf("%lf ", gsl_matrix_get(y,i,j));
-		// }
-		// puts("");
-	// }
+	gsl_matrix_free(x);
+	gsl_matrix_free(y);
+	gsl_matrix_free(q);
+	gsl_matrix_free(m);
+	gsl_matrix_free(v);
+	gsl_matrix_free(xt);
+	gsl_matrix_free(mt);
+	gsl_matrix_free(xty);
+	gsl_matrix_free(mtm);
+	gsl_vector_free(s);
+	gsl_vector_free(work);
+	gsl_permutation_free(p);
 	
 	return result;
 }
@@ -339,6 +334,7 @@ double trDFD(Curve *p1, Curve *p2)
 	gsl_permutation *p;
 	int signum;
 	Curve *trP1, *trP2;
+	double result;
 	
 	//Find centroids
 	xc.x = 0;
@@ -433,7 +429,25 @@ double trDFD(Curve *p1, Curve *p2)
 		trP2->points[i].w = 0;
 	}
 	
-	return dfd(trP1, trP2);
+	gsl_matrix_free(x);
+	gsl_matrix_free(y);
+	gsl_matrix_free(q);
+	gsl_matrix_free(m);
+	gsl_matrix_free(v);
+	gsl_matrix_free(xt);
+	gsl_matrix_free(xty);
+	gsl_vector_free(s);
+	gsl_vector_free(work);
+	gsl_permutation_free(p);
+	
+	result = dfd(trP1, trP2);
+	
+	free(trP1->points);
+	free(trP1);
+	free(trP2->points);
+	free(trP2);
+	
+	return result;
 	
 }
 
@@ -448,6 +462,7 @@ double trDTW(Curve *p1, Curve *p2)
 	gsl_permutation *p;
 	int signum;
 	Curve *trP1, *trP2;
+	double result;
 	
 	//Find centroids
 	xc.x = 0;
@@ -542,7 +557,25 @@ double trDTW(Curve *p1, Curve *p2)
 		trP2->points[i].w = 0;
 	}
 	
-	return dtw(trP1, trP2);
+	gsl_matrix_free(x);
+	gsl_matrix_free(y);
+	gsl_matrix_free(q);
+	gsl_matrix_free(m);
+	gsl_matrix_free(v);
+	gsl_matrix_free(xt);
+	gsl_matrix_free(xty);
+	gsl_vector_free(s);
+	gsl_vector_free(work);
+	gsl_permutation_free(p);
+	
+	result = dfd(trP1, trP2);
+	
+	free(trP1->points);
+	free(trP1);
+	free(trP2->points);
+	free(trP2);
+	
+	return result;
 	
 }
 
